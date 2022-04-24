@@ -5,7 +5,7 @@
   - Revise flashcards.
   - Organise flashcards.
   - Delete flashcards.
-# *Why Snekkie-Flashcards exists * #
+# *Why Snekkie-Flashcards exists* #
   - To memorise information.
   - To not havge to spend as much time making flashcards.
   - To not use as much paper.
