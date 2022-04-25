@@ -1,0 +1,19 @@
+{
+  "Bundles":
+    {
+      "Humanities": {
+        "Deletable": "No",
+        "Keyword": "human"
+      },
+      "Science":
+      {
+        "Keyword": "Science",
+        "Deletable": "No"
+      },
+      "Mathematics":
+      {
+        "Keyword": "Maths",
+        "Deletable": "No"
+      }
+    }
+}
