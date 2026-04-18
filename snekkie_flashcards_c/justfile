@@ -1,0 +1,126 @@
+set shell := ["bash", "-c"]
+
+
+# If switching over from makefile, these may be outdated:
+#CC                 := "gcc"
+#FLAGS              := "-g -Wall -O2 -MMD -MP -D_GNU_SOURCE"
+#
+#SRC_DIR            := "src"
+#IMPL_DIR           := "src/implementations"
+#HEADERS_DIR        := "src/headers"
+#BUILD_DIR          := "build"
+#COMPILED_DIR       := "compiled"
+#
+#TESTS_SRC_DIR      := "tests-src"
+#TESTS_BUILD_DIR    := "tests-build"
+TESTS_COMPILED_DIR := "tests-compiled"
+
+TARGET             := "compiled/snekkie-flashcards.bin"
+DOCKER_IMG         := "snekkie-flashcards"
+
+build:
+	make build
+	@# Old justfile-only solution
+	@##!/usr/bin/env bash
+	@#set -e
+	@#mkdir -p "{\{BUILD_DIR}}/implementations" "{\{COMPILED_DIR}}"
+	@#
+	@#for src in {\{SRC_DIR}}/main.c {\{IMPL_DIR}}/*.c; do
+	@#	rel="${src#{\{SRC_DIR}}/}"
+	@#	obj="{\{BUILD_DIR}}/${rel%.c}.o"
+	@#	mkdir -p "$(dirname "$obj")"
+	@#	echo "  CC $src"
+	@#	{\{CC}} {\{FLAGS}} -I"{\{HEADERS_DIR}}" -c "$src" -o "$obj"
+	@#done
+	@#
+	@#objs=$(find "{\{BUILD_DIR}}" -name "*.o")
+	@#echo "  LD {\{TARGET}}"
+	@#{\{CC}} $objs -o "{\{TARGET}}"
+
+_build_silent:
+	@make build > /dev/null
+
+build-tests: build
+	make build_tests
+	@# Old justfile-only solution
+	@##!/usr/bin/env bash
+	@#set -e
+	@#mkdir -p "{\{TESTS_BUILD_DIR}}" "{\{TESTS_COMPILED_DIR}}"
+	@#
+	@#lib_objs=$(find "{\{BUILD_DIR}}" -name "*.o" ! -name "main.o")
+	@#
+	@#for src in {\{TESTS_SRC_DIR}}/*.c; do
+	@#	name="$(basename "$src" .c)"
+	@#	obj="{\{TESTS_BUILD_DIR}}/$name.o"
+	@#	bin="{\{TESTS_COMPILED_DIR}}/$name.bin"
+	@#	echo "  CC $src"
+	@#	{\{CC}} {\{FLAGS}} -I"{\{HEADERS_DIR}}" -c "$src" -o "$obj"
+	@#	echo "  LD $bin"
+	@#	{\{CC}} "$obj" $lib_objs -o "$bin"
+	@#done
+
+_build_tests_silent: _build_silent
+	@make build_tests > /dev/null
+
+run *args: _build_silent
+	./{{TARGET}} {{args}}
+
+run-tests *tests: _build_tests_silent
+	#!/usr/bin/env bash
+	if [[ -z "{{tests}}" ]]; then
+		echo "We don't have a wrapper to run all tests yet"
+	else
+		for test in {{tests}}; do
+			./{{TESTS_COMPILED_DIR}}/$test
+		done
+	fi
+
+run-valgrind *args: _build_silent
+	valgrind ./{{TARGET}} {{args}}
+
+clean:
+	make clean
+	@# Old justfile-only solution
+	@##!/usr/bin/env bash
+	@#rm -rf \
+	@#	"{\{BUILD_DIR}}" \
+	@#	"{\{COMPILED_DIR}}" \
+	@#	"{\{TESTS_BUILD_DIR}}" \
+	@#	"{\{TESTS_COMPILED_DIR}}"
+
+_docker_up:
+	#!/usr/bin/env bash
+	if ! docker image inspect "{{DOCKER_IMG}}" > /dev/null 2>&1; then
+		echo "BUILDING DOCKER IMAGE"
+		just --justfile={{justfile()}} docker-build
+	fi
+
+docker-build:
+	docker build -t {{DOCKER_IMG}} .
+
+docker-run *args: _docker_up
+	docker run -e SNEKKIE_FLASHCARDS_DATA=/data/dummy-safe {{DOCKER_IMG}} {{args}}
+
+docker-run-tests *tests: _docker_up
+	#!/usr/bin/env bash
+	if [[ -z "{{tests}}" ]]; then
+		echo "We don't have a wrapper to run all tests yet"
+	else
+		for test in {{tests}}; do
+			docker run -e SNEKKIE_FLASHCARDS_DATA=/data/dummy-safe \
+				--entrypoint "tests-compiled/$test" \
+				{{DOCKER_IMG}}
+		done
+	fi
+
+docker-run-valgrind *args: _docker_up	
+	docker run -e SNEKKIE_FLASHCARDS_DATA=/data/dummy-safe \
+		--entrypoint "/usr/bin/valgrind" \
+		{{DOCKER_IMG}} \
+		{{TARGET}} {{args}}
+
+docker-enter: _docker_up
+	docker run -it --entrypoint /bin/bash {{DOCKER_IMG}}
+	
+docker-clean:
+	docker rmi -f {{DOCKER_IMG}}

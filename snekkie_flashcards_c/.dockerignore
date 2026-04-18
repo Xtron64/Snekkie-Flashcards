@@ -1,0 +1,10 @@
+build/
+compiled/
+tests-build/
+tests-compiled/
+.idea/
+.vscode/
+shell.nix
+Dockerfile
+justfile
+.dockerignore
