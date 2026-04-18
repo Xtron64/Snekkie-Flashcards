@@ -1,0 +1,12 @@
+.idea
+snekkie_flashcards_c/.vscode
+snekkie_flashcards_c/build
+snekkie_flashcards_c/compiled
+snekkie_flashcards_c/tests-build
+snekkie_flashcards_c/tests-compiled
+snekkie_flashcards_py/src/__pycache__
+snekkie_flashcards_py/src/create_flashcards
+snekkie_flashcards_py/src/curses_funcs
+snekkie_flashcards_py/src/input_functions
+snekkie_flashcards_py/src/revise_flashcards
+snekkie_flashcards_py
